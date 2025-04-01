@@ -5,6 +5,7 @@ import { CryptoService } from 'src/crypto/crypto.service';
 
 @Module({
   providers: [AuthService, CryptoService],
-  controllers: [AuthController]
+  controllers: [AuthController],
+  exports: [AuthService]
 })
 export class AuthModule {}
