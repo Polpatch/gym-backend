@@ -8,12 +8,13 @@ import { CryptoService } from './crypto/crypto.service';
 import { WorkoutModule } from './workout/workout.module';
 import { WorkoutExerciseModule } from './workout-exercise/workout-exercise.module';
 import { ProgressModule } from './progress/progress.module';
+import { CategoryModule } from './category/category.module';
 
 @Module({
   imports: [ExerciseModule, AuthModule, ConfigModule.forRoot({
       envFilePath: `.env`,
       isGlobal: true,
-    }), WorkoutModule, WorkoutExerciseModule, ProgressModule],
+    }), WorkoutModule, WorkoutExerciseModule, ProgressModule, CategoryModule],
   controllers: [AppController],
   providers: [AppService, CryptoService],
 })
