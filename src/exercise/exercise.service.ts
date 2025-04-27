@@ -13,23 +13,23 @@ export class ExerciseService {
   constructor(private readonly configService: ConfigService, private readonly authService: AuthService){}
 
   async create(data: CreateExerciseDto, jwt: string) {
-    return await create<CreateExerciseDto>(data, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null));
+    return await create<CreateExerciseDto>(data, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null, null));
   }  
 
   async findAll(jwt: string, getAll) {
-    return await findAll(jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, getAll, null));
+    return await findAll(jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, getAll, null, null));
   }
 
   async findOne(id: number, jwt: string, getAll) {
-    return await findOne(id, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, getAll, null));
+    return await findOne(id, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, getAll, null, null));
   }
 
   async update(id: number, data: UpdateExerciseDto, jwt: string) {
-    return await update<UpdateExerciseDto>(id, data, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null));
+    return await update<UpdateExerciseDto>(id, data, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null, null));
   }
 
   async remove(id: number, jwt: string) {
-    return await remove(id, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null));
+    return await remove(id, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null, null));
   }
 
   async importFromCsv(file: any, jwt: string) {

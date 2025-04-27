@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { CreateProgressDto } from './dto/create-progress.dto';
 import { UpdateProgressDto } from './dto/update-progress.dto';
 import { create, findAll, findOne, remove, update, createConfig } from 'src/common/service-utilities';
@@ -6,6 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import { AuthService } from 'src/auth/auth.service';
 import * as csv from 'csv-parser';
 import { Readable } from 'stream';
+import { isAdminRole } from 'src/common/constants';
 
 const name_service = 'progresses'
 
@@ -13,26 +14,54 @@ const name_service = 'progresses'
 export class ProgressService {
   constructor(private readonly configService: ConfigService, private readonly authService: AuthService){}
   
-  async create(data: CreateProgressDto, jwt) {
-    return await create<CreateProgressDto>(data, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null));
+  async create(data: CreateProgressDto, jwt: string) {
+    const user = await this.authService.userInfo(jwt);
+    
+    // Imposta automaticamente l'ID dell'utente
+    const dataWithUser = {
+      ...data,
+      user: user.id
+    };
+    
+    return await create<CreateProgressDto>(dataWithUser, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null, user.role));
   }
 
   async findAll(jwt: string, getAll: boolean) {
     const user = await this.authService.userInfo(jwt);
-    return await findAll(jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, getAll, user.id));
+    return await findAll(jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, getAll, user.id, user.role));
   }
 
   async findOne(id: number, jwt: string, getAll: boolean) {
     const user = await this.authService.userInfo(jwt);
-    return await findOne(id, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, getAll, user.id));
+    return await findOne(id, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, getAll, user.id, user.role));
   }
 
-  async update(id: number, data: UpdateProgressDto, jwt) {
-    return await update<UpdateProgressDto>(id, data, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null));
+  async update(id: number, data: UpdateProgressDto, jwt: string) {
+    const user = await this.authService.userInfo(jwt);
+    
+    // Se l'utente non è admin, verifica che il record appartenga all'utente
+    if (!isAdminRole(user.role, this.configService)) {
+      const record = await findOne(id, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, user.id, user.role));
+      if (!record) {
+        throw new ForbiddenException('Non hai i permessi per modificare questo record');
+      }
+    }
+    
+    return await update<UpdateProgressDto>(id, data, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null, user.role));
   }
 
-  async remove(id: number, jwt) {
-    return await remove(id, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null));
+  async remove(id: number, jwt: string) {
+    const user = await this.authService.userInfo(jwt);
+    
+    // Se l'utente non è admin, verifica che il record appartenga all'utente
+    if (!isAdminRole(user.role, this.configService)) {
+      const record = await findOne(id, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, user.id, user.role));
+      if (!record) {
+        throw new ForbiddenException('Non hai i permessi per eliminare questo record');
+      }
+    }
+    
+    return await remove(id, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null, user.role));
   }
 
   async importFromCsv(file: any, jwt: string) {
@@ -47,6 +76,7 @@ export class ProgressService {
     try {
       const progresses = await this.parseCsvFile(file.buffer);
       const results = [];
+      const user = await this.authService.userInfo(jwt);
 
       for (const progress of progresses) {
         // Verifica che il CSV contenga i campi obbligatori
@@ -60,7 +90,8 @@ export class ProgressService {
           exercise: progress.exercise,
           num_sets: parseInt(progress.num_sets) || 0,
           num_reps: parseInt(progress.num_reps) || 0,
-          date: progress.date || new Date().toISOString()
+          date: progress.date || new Date().toISOString(),
+          user: user.id
         };
 
         const result = await this.create(progressData, jwt);

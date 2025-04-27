@@ -14,25 +14,25 @@ export class CategoryService {
   constructor(private readonly configService: ConfigService, private readonly authService: AuthService){}
 
   async create(data: CreateCategoryDto, jwt: string) {
-    return await create<CreateCategoryDto>(data, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null));
+    return await create<CreateCategoryDto>(data, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null, null));
   }
 
   async findAll(jwt: string, getAll: boolean) {
     const user = await this.authService.userInfo(jwt);
-    return await findAll(jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, getAll, user.id));
+    return await findAll(jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, getAll, user.id, null));
   }
 
   async findOne(id: number, jwt: string, getAll: boolean) {
     const user = await this.authService.userInfo(jwt);
-    return await findOne(id, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, getAll, user.id));
+    return await findOne(id, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, getAll, user.id, null));
   }
 
   async update(id: number, data: UpdateCategoryDto, jwt: string) {
-    return await update<UpdateCategoryDto>(id, data, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null));
+    return await update<UpdateCategoryDto>(id, data, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null, null));
   }
 
   async remove(id: number, jwt: string) {
-    return await remove(id, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null));
+    return await remove(id, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null, null));
   }
 
   async importFromCsv(file: any, jwt: string) {

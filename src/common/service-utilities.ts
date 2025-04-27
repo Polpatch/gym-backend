@@ -3,14 +3,19 @@ import { createHeader } from "./utils";
 import { HttpException, HttpStatus } from "@nestjs/common";
 import { AuthService } from "src/auth/auth.service";
 import { ConfigService } from "@nestjs/config";
+import { isAdminRole } from "./constants";
 
 const authService = new AuthService(new ConfigService());
+const configService = new ConfigService();
 
-function createConfig(jwt: string, populateAll: boolean, userId: number | null): AxiosRequestConfig {
+function createConfig(jwt: string, populateAll: boolean, userId: number | null, userRole: string): AxiosRequestConfig {
     const params: any = populateAll ? { populate: '*' } : {};
-    if (userId !== null) {
+    
+    // Se l'utente non è admin, filtra per userId
+    if (!isAdminRole(userRole, configService) && userId !== null) {
         params['filters[user][id]'] = userId;
     }
+    
     return {
         params,
         ...createHeader(jwt)

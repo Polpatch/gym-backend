@@ -1,4 +1,4 @@
-import { IsArray, IsDate, IsNotEmpty, IsString } from "class-validator";
+import { IsArray, IsDate, IsNotEmpty, IsString, IsNumber } from "class-validator";
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateWorkoutDto {
@@ -19,4 +19,9 @@ export class CreateWorkoutDto {
     @IsArray()
     @IsString({ each: true })
     workout_exercises: string[];
+
+    @ApiProperty({ description: 'ID dell\'utente proprietario del workout' })
+    @IsNotEmpty()
+    @IsNumber()
+    readonly user: number;
 }

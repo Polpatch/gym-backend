@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { CreateWorkoutExerciseDto } from './dto/create-workout-exercise.dto';
 import { UpdateWorkoutExerciseDto } from './dto/update-workout-exercise.dto';
 import { ConfigService } from '@nestjs/config';
@@ -14,25 +14,53 @@ export class WorkoutExerciseService {
   constructor(private readonly configService: ConfigService, private readonly authService: AuthService){}
   
   async create(data: CreateWorkoutExerciseDto, jwt: string) {
-    return await create<CreateWorkoutExerciseDto>(data, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null));
+    const user = await this.authService.userInfo(jwt);
+    
+    // Imposta automaticamente l'ID dell'utente
+    const dataWithUser = {
+      ...data,
+      user: user.id
+    };
+    
+    return await create<CreateWorkoutExerciseDto>(dataWithUser, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null, user.role));
   }
 
   async findAll(jwt: string, getAll: boolean) {
     const user = await this.authService.userInfo(jwt);
-    return await findAll(jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, getAll, user.id));
+    return await findAll(jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, getAll, user.id, user.role));
   }
 
   async findOne(id: number, jwt: string, getAll: boolean) {
     const user = await this.authService.userInfo(jwt);
-    return await findOne(id, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, getAll, user.id));
+    return await findOne(id, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, getAll, user.id, user.role));
   }
 
   async update(id: number, data: UpdateWorkoutExerciseDto, jwt: string) {
-    return await update<UpdateWorkoutExerciseDto>(id, data, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null));
+    const user = await this.authService.userInfo(jwt);
+    
+    // Se l'utente non è admin, verifica che il record appartenga all'utente
+    if (user.role !== 'Admin') {
+      const record = await findOne(id, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, user.id, user.role));
+      if (!record) {
+        throw new ForbiddenException('Non hai i permessi per modificare questo record');
+      }
+    }
+    
+    return await update<UpdateWorkoutExerciseDto>(id, data, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null, user.role));
   }
 
   async remove(id: number, jwt: string) {
-    return await remove(id, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null));
+    const user = await this.authService.userInfo(jwt);
+    
+    // Se l'utente non è admin, verifica che il record appartenga all'utente
+    if (user.role !== 'Admin') {
+      const record = await findOne(id, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, user.id, user.role));
+      if (!record) {
+        throw new ForbiddenException('Non hai i permessi per eliminare questo record');
+      }
+    }
+    
+    return await remove(id, jwt, this.configService.get('STRAPI_ENDPOINT'), name_service, createConfig(jwt, false, null, user.role));
   }
 
   async importFromCsv(file: any, jwt: string) {
@@ -47,6 +75,7 @@ export class WorkoutExerciseService {
     try {
       const workoutExercises = await this.parseCsvFile(file.buffer);
       const results = [];
+      const user = await this.authService.userInfo(jwt);
 
       for (const workoutExercise of workoutExercises) {
         // Verifica che il CSV contenga i campi obbligatori
@@ -59,7 +88,8 @@ export class WorkoutExerciseService {
           workout: workoutExercise.workout,
           serie: parseInt(workoutExercise.serie) || 0,
           reps: parseInt(workoutExercise.reps) || 0,
-          max: workoutExercise.max === 'true' || workoutExercise.max === '1'
+          max: workoutExercise.max === 'true' || workoutExercise.max === '1',
+          user: user.id
         };
 
         const result = await this.create(workoutExerciseData, jwt);

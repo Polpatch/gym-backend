@@ -13,7 +13,13 @@ export class AuthService {
             createHeader(jwt),
         );
 
-        return response.data;
+        // Estraggo il ruolo dall'utente
+        const userRole = response.data.role?.name || 'authenticated';
+        
+        return {
+            ...response.data,
+            role: userRole
+        };
     }
 
     async login(identifier: string, password: string): Promise<any>{

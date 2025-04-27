@@ -26,4 +26,9 @@ export class CreateProgressDto {
     @ApiProperty({ description: 'Data del progresso' })
     @IsDate()
     readonly date: string;
+
+    @ApiProperty({ description: 'ID dell\'utente proprietario del progresso' })
+    @IsNotEmpty()
+    @IsNumber()
+    readonly user: number;
 }
