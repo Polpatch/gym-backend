@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Req, Query, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { ProgressService } from './progress.service';
 import { CreateProgressDto } from './dto/create-progress.dto';
 import { UpdateProgressDto } from './dto/update-progress.dto';
 import { getJwt } from 'src/common/utils';
 import { JwtModificationInterceptor } from 'src/jwt-modification/jwt-modification.interceptor';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('progressi')
 @ApiBearerAuth()
@@ -20,6 +21,17 @@ export class ProgressController {
   async create(@Body() createProgressDto: CreateProgressDto, @Req() request: Request) {
     const jwt = getJwt(request);
     return await this.progressService.create(createProgressDto, jwt);
+  }
+
+  @Post('upload-csv')
+  @ApiOperation({ summary: 'Importa progressi da file CSV' })
+  @ApiConsumes('multipart/form-data')
+  @ApiResponse({ status: 201, description: 'Progressi importati con successo' })
+  @ApiResponse({ status: 400, description: 'File non valido o errore di importazione' })
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadCsv(@UploadedFile() file: any, @Req() request: Request) {
+    const jwt = getJwt(request);
+    return await this.progressService.importFromCsv(file, jwt);
   }
 
   @Get()

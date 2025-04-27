@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Req, UseInterceptors, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req, UseInterceptors, Query, UploadedFile } from '@nestjs/common';
 import { WorkoutService } from './workout.service';
 import { CreateWorkoutDto } from './dto/create-workout.dto';
 import { UpdateWorkoutDto } from './dto/update-workout.dto';
 import { getJwt } from 'src/common/utils';
 import { JwtModificationInterceptor } from 'src/jwt-modification/jwt-modification.interceptor';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('workout')
 @ApiBearerAuth()
@@ -20,6 +21,17 @@ export class WorkoutController {
   async create(@Body() createWorkoutDto: CreateWorkoutDto, @Req() request: Request) {
     const jwt = getJwt(request);
     return await this.workoutService.create(createWorkoutDto, jwt);
+  }
+
+  @Post('upload-csv')
+  @ApiOperation({ summary: 'Importa workout da file CSV' })
+  @ApiConsumes('multipart/form-data')
+  @ApiResponse({ status: 201, description: 'Workout importati con successo' })
+  @ApiResponse({ status: 400, description: 'File non valido o errore di importazione' })
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadCsv(@UploadedFile() file: any, @Req() request: Request) {
+    const jwt = getJwt(request);
+    return await this.workoutService.importFromCsv(file, jwt);
   }
 
   @Get()
