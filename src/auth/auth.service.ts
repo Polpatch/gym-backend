@@ -8,7 +8,8 @@ export class AuthService {
     constructor(private readonly configService: ConfigService){}
     
     async userInfo(jwt: string){
-        const response = await axios.get(`${this.configService.get('STRAPI_ENDPOINT')}/api/users/me`,
+        const response = await axios.get(
+            `${this.configService.get('STRAPI_ENDPOINT')}/api/users/me?populate[role][fields]=name`,
             createHeader(jwt),
         );
 
